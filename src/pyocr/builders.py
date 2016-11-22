@@ -35,6 +35,12 @@ class Box(object):
     Boxes are rectangles around each individual element recognized in the
     image. Elements are either char or word depending of the builder that
     was used.
+
+    Attributes:
+        content --- a single string
+        position --- the position of the box on the image. 
+                     Given as a tuple of tuple.
+
     """
 
     def __init__(self, content, position):
@@ -77,7 +83,7 @@ class Box(object):
     def __str__(self):
         return self.get_unicode_string().encode('utf-8')
 
-    def __box_cmp(self, other):
+    def _box_cmp(self, other):
         """
         Comparison function.
         """
@@ -93,37 +99,69 @@ class Box(object):
                 return 1
         return 0
 
+    def __box_cmp(self, other):
+        return self._box_cmp(other)
+
     def __lt__(self, other):
-        return self.__box_cmp(other) < 0
+        return self._box_cmp(other) < 0
 
     def __gt__(self, other):
-        return self.__box_cmp(other) > 0
+        return self._box_cmp(other) > 0
 
     def __eq__(self, other):
-        return self.__box_cmp(other) == 0
+        return self._box_cmp(other) == 0
 
     def __le__(self, other):
-        return self.__box_cmp(other) <= 0
+        return self._box_cmp(other) <= 0
 
     def __ge__(self, other):
-        return self.__box_cmp(other) >= 0
+        return self._box_cmp(other) >= 0
 
     def __ne__(self, other):
-        return self.__box_cmp(other) != 0
+        return self._box_cmp(other) != 0
 
     def __hash__(self):
+        content = self.content
         position_hash = 0
         position_hash += ((self.position[0][0] & 0xFF) << 0)
         position_hash += ((self.position[0][1] & 0xFF) << 8)
         position_hash += ((self.position[1][0] & 0xFF) << 16)
         position_hash += ((self.position[1][1] & 0xFF) << 24)
-        return (position_hash ^ hash(self.content) ^ hash(self.content))
+        return (position_hash ^ hash(content) ^ hash(content))
 
 
-class LineBox(object):
+class ConfBox(Box):
+    """
+    Represents a bounding box around an element of text.
+
+    Attributes:
+        confidence --- Confidence about the exactness of the contents
+
+
+    """
+    def __init__(self, content, position, confidence):
+        super(ConfBox, self).__init__(content, position)
+        self.confidence = confidence
+
+    def get_unicode_string(self):
+        return to_unicode("%s %f %d %d %d %d") % (
+            self.content,
+            self.confidence,
+            self.position[0][0],
+            self.position[0][1],
+            self.position[1][0],
+            self.position[1][1],
+        )
+
+
+class LineBox(Box):
     """
     Boxes are rectangles around each individual element recognized in the
     image. LineBox are boxes around lines. LineBox contains Box.
+
+    Attributes:
+        word_boxes --- a list of Box objects
+    
     """
 
     def __init__(self, word_boxes, position):
@@ -177,51 +215,8 @@ class LineBox(object):
             span_tag.appendChild(box_xml)
         return span_tag
 
-    def __str__(self):
-        return self.get_unicode_string().encode('utf-8')
-
     def __box_cmp(self, other):
-        """
-        Comparison function.
-        """
-        if other is None:
-            return -1
-        for (x, y) in ((self.position[0][1], other.position[0][1]),
-                       (self.position[1][1], other.position[1][1]),
-                       (self.position[0][0], other.position[0][0]),
-                       (self.position[1][0], other.position[1][0])):
-            if (x < y):
-                return -1
-            elif (x > y):
-                return 1
-        return 0
-
-    def __lt__(self, other):
-        return self.__box_cmp(other) < 0
-
-    def __gt__(self, other):
-        return self.__box_cmp(other) > 0
-
-    def __eq__(self, other):
-        return self.__box_cmp(other) == 0
-
-    def __le__(self, other):
-        return self.__box_cmp(other) <= 0
-
-    def __ge__(self, other):
-        return self.__box_cmp(other) >= 0
-
-    def __ne__(self, other):
-        return self.__box_cmp(other) != 0
-
-    def __hash__(self):
-        content = self.content
-        position_hash = 0
-        position_hash += ((self.position[0][0] & 0xFF) << 0)
-        position_hash += ((self.position[0][1] & 0xFF) << 8)
-        position_hash += ((self.position[1][0] & 0xFF) << 16)
-        position_hash += ((self.position[1][1] & 0xFF) << 24)
-        return (position_hash ^ hash(content) ^ hash(content))
+        return self._box_cmp(other)
 
 
 class TextBuilder(object):
