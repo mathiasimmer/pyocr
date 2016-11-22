@@ -233,6 +233,9 @@ class TextBuilder(object):
     tesseract_configs = []
     cuneiform_args = ["-f", "text"]
 
+    levels = ["all", "line"]
+    boxers = [lambda l, c, p : l.join("\n"), lambda t, c, p : t]
+
     def __init__(self, tesseract_layout=3, cuneiform_dotmatrix=False,
                  cuneiform_fax=False, cuneiform_singlecolumn=False):
         self.tesseract_configs += ["-psm", str(tesseract_layout)]
@@ -445,6 +448,12 @@ class _LineHTMLParser(HTMLParser):
         return "LineHTMLParser"
 
 
+class HTMLMultiLevelIterator(object):
+    # the HTMLParsers follow the same principle as a MultiLevelIterator
+    # there should be a way to unify the way it works
+    pass
+
+ 
 class WordBoxBuilder(object):
     """
     If passed to image_to_string(), image_to_string() will return an array of
@@ -454,6 +463,9 @@ class WordBoxBuilder(object):
     file_extensions = ["html", "hocr"]
     tesseract_configs = ['hocr']
     cuneiform_args = ["-f", "hocr"]
+
+    levels = ["word"]
+    boxers = [lambda t, c, p : Box(t, p)]
 
     def __init__(self, tesseract_layout=1):
         self.word_boxes = []
@@ -527,6 +539,9 @@ class LineBoxBuilder(object):
     file_extensions = ["html", "hocr"]
     tesseract_configs = ['hocr']
     cuneiform_args = ["-f", "hocr"]
+
+    levels = ["line", "word"]
+    boxers = [lambda l, c, p : LineBox(l, p), lambda t, c, p : Box(t, p)]
 
     def __init__(self, tesseract_layout=1):
         self.lines = []
